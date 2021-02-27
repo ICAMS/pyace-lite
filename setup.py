@@ -94,17 +94,15 @@ if not os.path.exists('bin'):
 try:
     shutil.copyfile('bin/pacemaker.py', 'bin/pacemaker')
     shutil.copyfile('bin/pace_yaml2ace.py', 'bin/pace_yaml2ace')
-    shutil.copyfile('bin/pace_update_yaml_potential.py', 'bin/pace_update_yaml_potential')
-    shutil.copyfile('lib/ace/utils/potentials-conversion/fortran2yaml.py', 'bin/pace_fortran2yaml')
 except FileNotFoundError as e:
     print("File not found (skipping):", e)
 
 setup(
-    name='pyace',
-    version='0.0.1.3',
+    name='pyace-lite',
+    version='0.0.1.4',
     author='Yury Lysogorskiy, Anton Bochkarev, Sarath Menon, Ralf Drautz',
     author_email='yury.lysogorskiy@rub.de',
-    description='Python bindings, utilities  for PACE and fitting code "pacemaker"',
+    description='Python bindings, utilities for PACE and fitting code "pacemaker"',
     long_description=readme,
     long_description_content_type='text/markdown',
     # tell setuptools to look for any packages under 'src'
