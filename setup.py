@@ -149,5 +149,5 @@ setup(
         'Programming Language :: Python :: 3',
     ],
     package_data={"pyace.data": ["pyace_selected_bbasis_funcspec.pckl.gzip"]},
-    scripts=["bin/pacemaker", "bin/pace_fortran2yaml", "bin/pace_yaml2ace", "bin/pace_update_yaml_potential"]
+    scripts=["bin/pacemaker", "bin/pace_yaml2ace"]
 )
