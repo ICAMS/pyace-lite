@@ -60,7 +60,7 @@ def main(args):
 
     parser.add_argument("-l", "--log", help="log filename", type=str, default="log.txt")
 
-    default_bbasis_func_df_filename = pkg_resources.resource_filename('pyace',
+    default_bbasis_func_df_filename = pkg_resources.resource_filename('pyace.data',
                                                                       'pyace_selected_bbasis_funcspec.pckl.gzip')
 
     args_parse = parser.parse_args(args)
