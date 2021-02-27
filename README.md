@@ -1,41 +1,20 @@
 # pyace
 
-`pyace` is the python implementation of [`ace`](https://git.noc.ruhr-uni-bochum.de/atomicclusterexpansion/ace).
+`pyace` is the python implementation of Atomic Cluster Expansion.
 It provides the basis functionality for analysis, potentials conversion and fitting.
+!!! THIS IS LIMITED FUNCTIONALITY VERSION OF `pyace` !!! 
+
+Please, contact us by email yury.lysogorskiy@rub.de if you want to have fully-functional version
 
 ## Installation
 
-### Cloning `pyace` repo
-Clone the git repo with the commands:
-
 ```
-git clone https://git.noc.ruhr-uni-bochum.de/atomicclusterexpansion/pyace.git --recurse-submodules
+pip install pyace-lite
 ```
-The last command here is needed to clone the original `ace` and `ace-evaluator` repositories.
  
-### (optional) Creating a conda environment
-It is common practice to create a separate `conda environment` to avoid dependencies mixing.
-You can create the new environment named `ace` with minimal amount of required packages,
-specified in `environment.yml` file with the following command: 
-```
-conda env create -f environment.yml
-```
-Then, activate the environment with 
-`source activate ace` or `conda activate ace`. To deactivate the environment, use `deactivate` command 
-
 ### (optional) Installation of `tensorpotential`  
 If you want to use `TensorFlow` implementation of atomic cluster expansion 
-(made by *Dr. Anton Bochkarev*), then use the following commands:
-```
-git clone git@git.noc.ruhr-uni-bochum.de:atomicclusterexpansion/tensorpotential.git
-cd tensorpotential
-python setup.py install
-```
-### Installation of `pyace`
-Finally, `pyace` could be installed with 
-```
-python setup.py install
-```
+(made by *Dr. Anton Bochkarev*), then contact us by email.
 
 ### (!) Known issues
 If you will encounter `segmentation fault` errors,  then try to upgrade the `numpy` package with the command:
@@ -43,11 +22,6 @@ If you will encounter `segmentation fault` errors,  then try to upgrade the `num
 pip install --upgrade numpy --force 
 ```
 
-## Updating installation
-```
-git pull --recurse-submodules
-python setup.py install
-```
 ## Directory structure
 
 - **lib/**: contains the extra libraries for `pyace`
@@ -56,35 +30,18 @@ python setup.py install
 # Utilities
 ## Potential conversion
 
-There are **three** basic formats ACE potentials:
+There are **two** basic formats ACE potentials:
 
-1. Fortran implementation format, i.e. 'Al.pbe.in'
-2. **B-basis set** in YAML format, i.e. 'Al.pbe.yaml'. This is an internal developers *complete* format 
-3. **Ctilde-basis set** in plain text format, i.e. 'Al.pbe.ace'. This format is *irreversibly* converted from *B-basis set* for
+1. **B-basis set** in YAML format, i.e. 'Al.pbe.yaml'. This is an internal developers *complete* format 
+2. **Ctilde-basis set** in plain text format, i.e. 'Al.pbe.ace'. This format is *irreversibly* converted from *B-basis set* for
 public potentials distribution and is used by LAMMPS.
 
 To convert potential you can use following utilities, that are installed together with `pyace` package into you executable paths:
-  * `Fortran` to  `YAML`: `pace_fortran2yaml`. Usage: 
-``` 
-pace_fortran2yaml <ace_fortran_potential> <output.yaml> [--verbose]
-```
   * `YAML` to `ace` : `pace_yaml2ace`. Usage:
 ```
   pace_yaml2ace [-h] [-o OUTPUT] input
 ```
-### Update YAML potential
-If you see the following message 
-```c
-DEPRECATION WARNING!!! Old (flatten) radcoefficients parameter encounterd, whereas it should be three-dimensional with [nradmax][lmax+1][nradbase] shape.
-Automatic reshaping will be done
-```
-then you could update given YAML potential file with a command: `pace_update_yaml_potential`
 
-Usage:
-```c
-pace_update_yaml_potential [-h] [-o OUTPUT] input
-```
- 
 ## Pacemaker
 
 `pacemaker` is an utility for fitting the atomic cluster expansion potential. Usage:
@@ -362,4 +319,3 @@ fit:
                                 #  - list of both above values - select maximum between two possibilities on each iteration 
 ```
 
-See `example/ladder_fit_pyace.yaml` and  `example/ladder_fit_tensorpot.yaml` example input files
