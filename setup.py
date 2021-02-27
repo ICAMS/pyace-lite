@@ -91,18 +91,22 @@ with open('README.md') as readme_file:
 
 if not os.path.exists('bin'):
     os.makedirs('bin')
-shutil.copyfile('bin/pacemaker.py', 'bin/pacemaker')
-shutil.copyfile('bin/pace_yaml2ace.py', 'bin/pace_yaml2ace')
-shutil.copyfile('bin/pace_update_yaml_potential.py', 'bin/pace_update_yaml_potential')
-shutil.copyfile('lib/ace/utils/potentials-conversion/fortran2yaml.py', 'bin/pace_fortran2yaml')
+try:
+    shutil.copyfile('bin/pacemaker.py', 'bin/pacemaker')
+    shutil.copyfile('bin/pace_yaml2ace.py', 'bin/pace_yaml2ace')
+    shutil.copyfile('bin/pace_update_yaml_potential.py', 'bin/pace_update_yaml_potential')
+    shutil.copyfile('lib/ace/utils/potentials-conversion/fortran2yaml.py', 'bin/pace_fortran2yaml')
+except FileNotFoundError as e:
+    print("File not found (skipping):", e)
 
 setup(
     name='pyace',
-    version='0.0.1',
+    version='0.0.1.3',
     author='Yury Lysogorskiy, Anton Bochkarev, Sarath Menon, Ralf Drautz',
     author_email='yury.lysogorskiy@rub.de',
-    description='Python bindings for pACE',
+    description='Python bindings, utilities  for PACE and fitting code "pacemaker"',
     long_description=readme,
+    long_description_content_type='text/markdown',
     # tell setuptools to look for any packages under 'src'
     packages=find_packages('src'),
     # tell setuptools that all packages will be under the 'src' directory
@@ -120,10 +124,10 @@ setup(
     cmdclass=dict(build_ext=CMakeBuild),
     zip_safe=False,
     url='https://git.noc.ruhr-uni-bochum.de/atomicclusterexpansion/pyace',
-    install_requires=['numpy<=1.19', 'ase', 'pandas', 'ruamel.yaml'],
+    install_requires=['numpy', 'ase', 'pandas', 'ruamel.yaml'],
     classifiers=[
         'Programming Language :: Python :: 3',
     ],
-    data_files=[("pyace", ["data/pyace_selected_bbasis_funcspec.pckl.gzip"])],
+    package_data={"pyace.data": ["pyace_selected_bbasis_funcspec.pckl.gzip"]},
     scripts=["bin/pacemaker", "bin/pace_fortran2yaml", "bin/pace_yaml2ace", "bin/pace_update_yaml_potential"]
 )
