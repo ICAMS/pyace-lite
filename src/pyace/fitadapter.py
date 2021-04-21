@@ -1,30 +1,8 @@
-# /*
-# * Atomic cluster expansion
-# *
-# * Copyright 2021  (c) Yury Lysogorskiy, Anton Bochkarev,
-# * Sarath Menon, Ralf Drautz
-# *
-# * Ruhr-University Bochum, Bochum, Germany
-# *
-# * See the LICENSE file.
-# * This FILENAME is free software: you can redistribute it and/or modify
-# * it under the terms of the GNU General Public License as published by
-# * the Free Software Foundation, either version 3 of the License, or
-# * (at your option) any later version.
-#
-# * This program is distributed in the hope that it will be useful,
-# * but WITHOUT ANY WARRANTY; without even the implied warranty of
-# * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# * GNU General Public License for more details.
-#     * You should have received a copy of the GNU General Public License
-# * along with this program.  If not, see <http://www.gnu.org/licenses/>.
-# */
-
-
 import logging
 
 from typing import Dict, Union, Callable
 
+import subprocess as sp
 import pandas as pd
 import numpy as np
 
@@ -32,7 +10,7 @@ log = logging.getLogger(__name__)
 log.setLevel(logging.DEBUG)
 
 from pyace.const import *
-from pyace.basis import BBasisConfiguration, ACEBBasisSet
+from pyace.basis import BBasisConfiguration, ACEBBasisSet, ACEBBasisFunction
 from pyace.pyacefit import PyACEFit, LossFunctionSpecification
 
 
@@ -96,6 +74,55 @@ class FitBackendAdapter:
         else:
             raise ValueError('{0} is not a valid evaluator'.format(self.backend_config.evaluator_name))
 
+    @staticmethod
+    def get_gpu_memory():
+        _output_to_list = lambda x: x.decode('ascii').split('\n')[:-1]
+
+        MB2GB = 1./1024
+        COMMAND = "nvidia-smi --query-gpu=memory.free --format=csv"
+        memory_free_info = _output_to_list(sp.check_output(COMMAND.split()))[1:]
+        memory_free_values = [int(x.split()[0]) for i, x in enumerate(memory_free_info)]
+
+        return np.array(memory_free_values) * MB2GB
+
+    def adjust_batch_size(self, dataframe, bbasisconfig, ini_batch_size):
+        from tensorpotential.utils.utilities import batching_data
+
+        try:
+            gpu_mem = self.get_gpu_memory()
+        except:
+            gpu_mem = None
+
+        if gpu_mem is None:
+            print('There are no available GPUs, batch size adjustment will not be performed')
+
+        batches = batching_data(dataframe, batch_size=ini_batch_size)
+        max_A_tensor_size = 0
+        max_nat = 0
+        for b in batches:
+            # TODO: single specie hardcoded
+            nmax = bbasisconfig.funcspecs_blocks[0].nradmaxi
+            lmax = bbasisconfig.funcspecs_blocks[0].lmaxi
+            ml = (lmax +1) * (lmax + 1)
+            nn = len(b['ind_i'])
+            max_A_tensor_size = max(max_A_tensor_size, nn*nmax*ml)
+            max_nat = max(max_nat, max(b['ind_i'])+1)
+
+        rank_max = int.from_bytes(bytes(bbasisconfig.funcspecs_blocks[0].rankmax,
+                                        encoding="raw_unicode_escape"), byteorder='little')
+        ms_sizes = np.zeros([rank_max,])
+        max_B_tensor_size = 0
+        for f in bbasisconfig.funcspecs_blocks[0].funcspecs:
+            func = ACEBBasisFunction(f)
+            ms_sizes[func.rank-1] += len(func.ms_combs)
+        for ms_size in ms_sizes:
+            tens_size = ms_size*max_nat
+            max_B_tensor_size = max(max_B_tensor_size, tens_size)
+
+        max_tensor_gb = max(max_B_tensor_size, max_A_tensor_size) * 64 * 9.313225746154785e-10
+
+        return max_tensor_gb
+
     def run_tensorpot_fit(self, bbasisconfig: BBasisConfiguration, dataframe: pd.DataFrame,
                           loss_spec: LossFunctionSpecification, fit_config: Dict) -> BBasisConfiguration:
         from tensorpotential.potentials.ace import ACE
@@ -109,6 +136,7 @@ class FitBackendAdapter:
         log.info("Loss function specification: " + str(loss_spec))
         log.info("Batch size: {}".format(batch_size))
         batches = batching_data(dataframe, batch_size=batch_size)
+        # max_bytes = self.adjust_batch_size(dataframe, bbasisconfig, ini_batch_size=batch_size)
         n_batches = len(batches)
         if loss_spec.w1_coeffs != 1.0 or loss_spec.w2_coeffs != 1.0:
             log.warning("WARNING! 'w1_coeffs'={} and 'w2_coeffs'={}  in loss function will be ignored".

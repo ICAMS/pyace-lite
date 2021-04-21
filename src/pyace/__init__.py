@@ -6,7 +6,7 @@ logging.basicConfig(level=logging.INFO,
                     )
 logging.getLogger().setLevel(logging.INFO)
 
-from pyace.asecalc import PyACECalculator
+from pyace.asecalc import PyACECalculator, PyACEEnsembleCalculator
 
 from pyace.atomicenvironment import ACEAtomicEnvironment, create_cube, create_linear_chain, \
     aseatoms_to_atomicenvironment
@@ -27,7 +27,7 @@ __all__ = ["ACEAtomicEnvironment", "create_cube", "create_linear_chain", "aseato
            "ACECalculator",
            "ACECouplingTree", "generate_ms_cg_list", "validate_ls_LS", "is_valid_ls_LS", 'expand_ls_LS',
            "ACECTildeEvaluator", "ACEBEvaluator",
-           "PyACEFit", "PyACECalculator",
+           "PyACEFit", "PyACECalculator", "PyACEEnsembleCalculator",
            "StructuresDatasetSpecification", "EnergyBasedWeightingPolicy", "Fexp",
 
            "EnergyBasedWeightingPolicy", "UniformWeightingPolicy",

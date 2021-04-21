@@ -1,25 +1,3 @@
-# /*
-# * Atomic cluster expansion
-# *
-# * Copyright 2021  (c) Yury Lysogorskiy, Anton Bochkarev,
-# * Sarath Menon, Ralf Drautz
-# *
-# * Ruhr-University Bochum, Bochum, Germany
-# *
-# * See the LICENSE file.
-# * This FILENAME is free software: you can redistribute it and/or modify
-# * it under the terms of the GNU General Public License as published by
-# * the Free Software Foundation, either version 3 of the License, or
-# * (at your option) any later version.
-#
-# * This program is distributed in the hope that it will be useful,
-# * but WITHOUT ANY WARRANTY; without even the implied warranty of
-# * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# * GNU General Public License for more details.
-#     * You should have received a copy of the GNU General Public License
-# * along with this program.  If not, see <http://www.gnu.org/licenses/>.
-# */
-
 import logging
 from collections import defaultdict
 
@@ -168,11 +146,19 @@ def prepare_bbasisfuncspecifications(potential_config: Dict) -> List[BBasisFunct
     mask = np.hstack(mask)
     selected_df = funcs_df.loc[mask]
 
-    # zero the coefficients
+    # zero or random the coefficients
+    func_coef_initializer_kw = potential_config.get(POTENTIAL_FUNC_COEFS_INIT_KW, "zero")
+    if func_coef_initializer_kw not in ["zero", "random"]:
+        raise ValueError("Invalid `{}` parameter: {}, could be 'zero' or 'random'".format(POTENTIAL_FUNC_COEFS_INIT_KW,
+                                                                                          func_coef_initializer_kw))
+    log.info('BBasisFunction coefficients initializataion: {}'.format(func_coef_initializer_kw))
     spec_list = selected_df['spec'].tolist()
     element = potential_config['element']
     for spec in spec_list:
-        spec.coeffs = np.ones(potential_config.get(POTENTIAL_NDENSITY_KW, 1)) * 0.0
+        if func_coef_initializer_kw == "zero":
+            spec.coeffs = np.zeros(potential_config.get(POTENTIAL_NDENSITY_KW, 1))
+        elif func_coef_initializer_kw == "random":
+            spec.coeffs = np.random.randn(potential_config.get(POTENTIAL_NDENSITY_KW, 1))
         spec.elements = [element] * (len(spec.ns) + 1)
     return spec_list
 
@@ -235,9 +221,10 @@ def construct_bbasisconfiguration(potential_config: Dict) -> BBasisConfiguration
 
 def sort_funcspecs_list(lst: List[BBasisFunctionSpecification], ltype: str) -> List[BBasisFunctionSpecification]:
     if ltype == 'power_order':
-        return list(sorted(lst, key=lambda func: len(func.ns)+sum(func.ns)+sum(func.ls)))
+        return list(sorted(lst, key=lambda func: len(func.ns) + sum(func.ns) + sum(func.ls)))
     elif ltype == 'body_order':
-        return list(sorted(lst, key=lambda func: (tuple(func.elements), tuple(func.ns), tuple(func.ls), tuple(func.LS))))
+        return list(
+            sorted(lst, key=lambda func: (tuple(func.elements), tuple(func.ns), tuple(func.ls), tuple(func.LS))))
     else:
         raise ValueError('Specified Ladder type ({}) is not implemented'.format(ltype))
 
@@ -292,7 +279,8 @@ def extend_basis(initial_basis: BBasisConfiguration, final_basis: BBasisConfigur
 
     new_basis_config = initial_basis.copy()
     # TODO: currentlu  only single func spec block is assumed
-    new_basis_config.funcspecs_blocks[0].funcspecs = sort_funcspecs_list(existing_func_list + new_func_list, 'body_order')
+    new_basis_config.funcspecs_blocks[0].funcspecs = sort_funcspecs_list(existing_func_list + new_func_list,
+                                                                         'body_order')
     # update nradmax, lmax, nradabse
     new_nradmax = 0
     new_nradbase = 0

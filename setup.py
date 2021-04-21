@@ -121,7 +121,7 @@ except FileNotFoundError as e:
 
 setup(
     name='pyace-lite',
-    version='0.0.1.4',
+    version='0.0.1.5',
     author='Yury Lysogorskiy, Anton Bochkarev, Sarath Menon, Ralf Drautz',
     author_email='yury.lysogorskiy@rub.de',
     description='Python bindings, utilities for PACE and fitting code "pacemaker"',
@@ -149,5 +149,5 @@ setup(
         'Programming Language :: Python :: 3',
     ],
     package_data={"pyace.data": ["pyace_selected_bbasis_funcspec.pckl.gzip"]},
-    scripts=["bin/pacemaker", "bin/pace_fortran2yaml", "bin/pace_yaml2ace", "bin/pace_update_yaml_potential"]
+    scripts=["bin/pacemaker",  "bin/pace_yaml2ace" ]
 )

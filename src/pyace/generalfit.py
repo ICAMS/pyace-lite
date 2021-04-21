@@ -1,26 +1,3 @@
-# /*
-# * Atomic cluster expansion
-# *
-# * Copyright 2021  (c) Yury Lysogorskiy, Anton Bochkarev,
-# * Sarath Menon, Ralf Drautz
-# *
-# * Ruhr-University Bochum, Bochum, Germany
-# *
-# * See the LICENSE file.
-# * This FILENAME is free software: you can redistribute it and/or modify
-# * it under the terms of the GNU General Public License as published by
-# * the Free Software Foundation, either version 3 of the License, or
-# * (at your option) any later version.
-#
-# * This program is distributed in the hope that it will be useful,
-# * but WITHOUT ANY WARRANTY; without even the implied warranty of
-# * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# * GNU General Public License for more details.
-#     * You should have received a copy of the GNU General Public License
-# * along with this program.  If not, see <http://www.gnu.org/licenses/>.
-# */
-
-
 import gc
 import logging
 from datetime import datetime
@@ -253,8 +230,18 @@ class GeneralACEFit:
             if "_fit_cycles" in current_bbasisconfig.metadata:
                 del current_bbasisconfig.metadata["_fit_cycles"]
             log.debug("Update metadata: {}".format(current_bbasisconfig.metadata))
-            save_interim_potential(current_bbasisconfig, current_bbasisconfig.get_all_coeffs())
+            self.fit_backend.fitter.metrics.print_extended_metrics(self.fit_backend.fitter.iter_num,
+                                                                   float(self.fit_backend.fitter.last_loss),
+                                                                   self.fit_backend.fitter.get_reg_components(),
+                                                                   self.fit_backend.fitter.get_reg_weights(),
+                                                                   title='LADDER STEP',
+                                                                   nfuncs=new_func_num)
+            # save ladder potential
+            ladder_final_potential_filename = "interim_potential_ladder_step_{}.yaml".format(current_ladder_step)
+            save_interim_potential(current_bbasisconfig, current_bbasisconfig.get_all_coeffs(),
+                                   potential_filename=ladder_final_potential_filename)
             current_ladder_step += 1
+
         return current_bbasisconfig
 
     def cycle_fitting(self, bbasisconfig: BBasisConfiguration, current_ladder_step: int = 0) -> BBasisConfiguration:

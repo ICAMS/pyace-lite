@@ -1,26 +1,3 @@
-# /*
-# * Atomic cluster expansion
-# *
-# * Copyright 2021  (c) Yury Lysogorskiy, Anton Bochkarev,
-# * Sarath Menon, Ralf Drautz
-# *
-# * Ruhr-University Bochum, Bochum, Germany
-# *
-# * See the LICENSE file.
-# * This FILENAME is free software: you can redistribute it and/or modify
-# * it under the terms of the GNU General Public License as published by
-# * the Free Software Foundation, either version 3 of the License, or
-# * (at your option) any later version.
-#
-# * This program is distributed in the hope that it will be useful,
-# * but WITHOUT ANY WARRANTY; without even the implied warranty of
-# * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# * GNU General Public License for more details.
-#     * You should have received a copy of the GNU General Public License
-# * along with this program.  If not, see <http://www.gnu.org/licenses/>.
-# */
-
-
 import logging
 import numpy as np
 import pandas as pd
@@ -530,8 +507,8 @@ class FitMetrics:
             self.low_mae_f = 0
             self.low_max_abs_f = 0
 
-    def print_extended_metrics(self, step, total_loss, reg_comps, reg_weights):
-        str0 = '\n' + '-' * 44 + 'FIT STATS' + '-' * 44 + '\n'
+    def print_extended_metrics(self, step, total_loss, reg_comps, reg_weights, title='FIT STATS', nfuncs=None):
+        str0 = '\n' + '-' * 44 + title + '-' * 44 + '\n'
         str1 = '{prefix:<11} #{iter_num:<4}'.format(prefix='Iteration:', iter_num=step)
         str1 += '{prefix:<8}'.format(prefix='Loss:')
         str1 += '{prefix:>8} {tot_loss:>1.4e} ({fr:3.0f}%) '.format(prefix='Total: ', tot_loss=total_loss, fr=100)
@@ -560,9 +537,18 @@ class FitMetrics:
             str5 += '{s1:>1.4e} '.format(s1=comp)
             str5 += '({fr:3.0f}%) '.format(fr=comp / total_loss * 100)
             str5 += '\n'
-        str6 = '{prefix:>20}'.format(prefix='Number of params.: ') + '{ncoefs:>6d}'.format(ncoefs=self.ncoefs) + \
-               '{prefix:>22}'.format(prefix='Avg. time: ') + \
-               '{avg_t:>10.2f} {un:<6}'.format(avg_t=np.mean(self.time_history) / self.nat * 1e6, un='mcs/at')
+
+        if nfuncs is None:
+            line = 'Number of params.: '
+        else:
+            line = 'Number of params./funcs: '
+        str6 = '{prefix:>20}'.format(prefix=line) + '{ncoefs:>6d}'.format(ncoefs=self.ncoefs)
+        if nfuncs is not None:
+            str6 += '/{nfuncs:<6d}'.format(nfuncs=nfuncs)
+
+        str6 += '{prefix:>42}'.format(prefix='Avg. time: ') + \
+                '{avg_t:>10.2f} {un:<6}'.format(avg_t=np.mean(self.time_history) / self.nat * 1e6, un='mcs/at')
+
         str6 += '\n' + '-' * 97 + '\n'
         str_loss = str0 + str1 + str2 + str3 + str4 + str5 + str6
         ##############################
@@ -587,5 +573,5 @@ class FitMetrics:
                   '{:>21.2f}'.format(self.low_max_abs_e * 1e3) + \
                   '{:>21.2f}'.format(self.max_abs_f * 1e3) + \
                   '{:>24.2f}\n'.format(self.low_max_abs_f * 1e3)
-        er_str = er_str_h + er_rmse + er_mae + er_max + '-' * 97 + '\n'
+        er_str = er_str_h + er_rmse + er_mae + er_max + '-' * 97 #+ '\n'
         log.info(str_loss + er_str)

@@ -1,25 +1,3 @@
-# /*
-# * Atomic cluster expansion
-# *
-# * Copyright 2021  (c) Yury Lysogorskiy, Anton Bochkarev,
-# * Sarath Menon, Ralf Drautz
-# *
-# * Ruhr-University Bochum, Bochum, Germany
-# *
-# * See the LICENSE file.
-# * This FILENAME is free software: you can redistribute it and/or modify
-# * it under the terms of the GNU General Public License as published by
-# * the Free Software Foundation, either version 3 of the License, or
-# * (at your option) any later version.
-#
-# * This program is distributed in the hope that it will be useful,
-# * but WITHOUT ANY WARRANTY; without even the implied warranty of
-# * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# * GNU General Public License for more details.
-#     * You should have received a copy of the GNU General Public License
-# * along with this program.  If not, see <http://www.gnu.org/licenses/>.
-# */
-
 import numpy as np
 
 from ase.calculators.calculator import Calculator, all_changes
@@ -138,6 +116,102 @@ PyACE ASE calculator
             # swap order of the virials to fullfill ASE Voigt stresses order:  (xx, yy, zz, yz, xz, xy)
             self.stress = self.virial[[0, 1, 2, 5, 4, 3]] / self.volume
             self.results["stress"] = self.stress
+
+
+class PyACEEnsembleCalculator(Calculator):
+    """
+    PyACE ASE ensemble calculator
+    :param basis_set - list of specification of ACE potential, could be in following forms:
+                      ".ace" potential filename
+                      ".yaml" potential filename
+                      ACEBBasisSet object
+                      ACECTildeBasisSet object
+                      BBasisConfiguration object
+    """
+    implemented_properties = ['energy', 'forces', 'stress', 'energies', 'free_energy',
+                              'energy_std', 'forces_std', 'stress_std', 'energies_std', 'free_energy_std'
+                              ]
+
+    def __init__(self, basis_set, **kwargs):
+        """
+PyACE ASE ensemble calculator
+:param basis_set - specification of ACE potential, could be in following forms:
+                  ".ace" potential filename
+                  ".yaml" potential filename
+                  ACEBBasisSet object
+                  ACECTildeBasisSet object
+                  BBasisConfiguration object
+"""
+        Calculator.__init__(self, basis_set=basis_set, **kwargs)
+
+        self.calcs = [PyACECalculator(pot) for pot in basis_set]
+        self.ensemble_size = len(self.calcs)
+
+        self.energy = None
+        self.energies = None
+        self.forces = None
+        self.stress = None
+
+        self.energy_std = None
+        self.energies_std = None
+        self.forces_std = None
+        self.stress_std = None
+
+    def calculate(self, atoms=None, properties=('energy', 'forces', 'stress', 'energies',
+                                                'energy_std', 'forces_std', 'stress_std', 'energies_std',
+                                                ),
+                  system_changes=all_changes):
+        Calculator.calculate(self, atoms, properties, system_changes)
+
+        energy_lst = []
+        energies_lst = []
+        forces_lst = []
+
+        stress_lst = []
+
+        # loop over calculators
+        for calc in self.calcs:
+            cur_atoms = atoms.copy()
+            cur_atoms.set_calculator(calc)
+            cur_energy = cur_atoms.get_potential_energy()
+
+            energy_lst.append(cur_energy)
+            energies_lst.append(cur_atoms.get_potential_energies())
+            forces_lst.append(cur_atoms.get_forces())
+
+            if self.atoms.number_of_lattice_vectors == 3:
+                cur_stress = cur_atoms.get_stress()
+                stress_lst.append(cur_stress)
+
+        # compute mean of energies and forces
+        self.energy = np.mean(energy_lst, axis=0)
+        self.energies = np.mean(energies_lst, axis=0)
+        self.forces = np.mean(forces_lst, axis=0)
+
+        # compute std of energies and forces
+        self.energy_std = np.std(energy_lst, axis=0)
+        self.energies_std = np.std(energies_lst, axis=0)
+        self.forces_std = np.std(forces_lst, axis=0)
+
+        self.results = {
+            # mean
+            'energy': np.float64(self.energy.reshape(-1, )),
+            'free_energy': np.float64(self.energy.reshape(-1, )),
+            'forces': self.forces.astype(np.float64),
+            'energies': self.energies.astype(np.float64),
+
+            # std
+            'energy_std': np.float64(self.energy_std.reshape(-1, )),
+            'free_energy_std': np.float64(self.energy_std.reshape(-1, )),
+            'forces_std': self.forces_std.astype(np.float64),
+            'energies_std': self.energies_std.astype(np.float64)
+        }
+
+        if self.atoms.number_of_lattice_vectors == 3:
+            self.stress = np.mean(stress_lst, axis=0)
+            self.stress_std = np.std(stress_lst, axis=0)
+            self.results["stress"] = self.stress
+            self.results["stress_std"] = self.stress_std
 
 
 if __name__ == '__main__':
